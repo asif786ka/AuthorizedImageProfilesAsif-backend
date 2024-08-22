@@ -29,30 +29,32 @@ const writeData = async (users) => {
   await fs.writeJson(dataFilePath, { users });
 };
 
-// Endpoint to handle user registration
+// Endpoint to handle user registration and return token
 app.post('/register', async (req, res) => {
-  const { email, password } = req.body;
-  const users = await readData();
+    const { email, password } = req.body;
+    const users = await readData();
+    
+    // Check if the user already exists
+    const existingUser = users.find((u) => u.email === email);
+    if (existingUser) {
+      return res.status(409).json({ error: 'User already exists' });
+    }
+    
+    // Create a new user
+    const token = `token-${Math.random().toString(36).substr(2)}`; // Generate a token
+    const newUser = {
+      userid: `user-${Math.random().toString(36).substr(2, 9)}`,
+      email,
+      password,
+      avatar_url: '',
+      token, // Assign the generated token to the user
+    };
+    users.push(newUser);
+    await writeData(users);
+    
+    res.status(201).json({ message: 'User registered successfully', userid: newUser.userid, token });
+  });
   
-  // Check if the user already exists
-  const existingUser = users.find((u) => u.email === email);
-  if (existingUser) {
-    return res.status(409).json({ error: 'User already exists' });
-  }
-  
-  // Create a new user
-  const newUser = {
-    userid: `user-${Math.random().toString(36).substr(2, 9)}`,
-    email,
-    password,
-    avatar_url: '',
-    token: null,
-  };
-  users.push(newUser);
-  await writeData(users);
-  
-  res.status(201).json({ message: 'User registered successfully', userid: newUser.userid });
-});
 
 // Endpoint to handle user login and session creation
 app.post('/sessions/new', async (req, res) => {
