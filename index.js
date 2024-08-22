@@ -29,6 +29,31 @@ const writeData = async (users) => {
   await fs.writeJson(dataFilePath, { users });
 };
 
+// Endpoint to handle user registration
+app.post('/register', async (req, res) => {
+  const { email, password } = req.body;
+  const users = await readData();
+  
+  // Check if the user already exists
+  const existingUser = users.find((u) => u.email === email);
+  if (existingUser) {
+    return res.status(409).json({ error: 'User already exists' });
+  }
+  
+  // Create a new user
+  const newUser = {
+    userid: `user-${Math.random().toString(36).substr(2, 9)}`,
+    email,
+    password,
+    avatar_url: '',
+    token: null,
+  };
+  users.push(newUser);
+  await writeData(users);
+  
+  res.status(201).json({ message: 'User registered successfully', userid: newUser.userid });
+});
+
 // Endpoint to handle user login and session creation
 app.post('/sessions/new', async (req, res) => {
   const { email, password } = req.body;
@@ -90,3 +115,4 @@ app.delete('/sessions/logout', async (req, res) => {
 // Start the server on the specified port
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
